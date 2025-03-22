@@ -1,166 +1,183 @@
-# AI Hedge Fund
+# Enterprise Agentic AI Executive Platform
 
-This is a proof of concept for an AI-powered hedge fund.  The goal of this project is to explore the use of AI to make trading decisions.  This project is for **educational** purposes only and is not intended for real trading or investment.
+A sophisticated decision intelligence system that simulates a high-performance executive team through specialized AI agents, working collaboratively to analyze complex business decisions using formal frameworks and robust consensus mechanisms.
 
-This system employs several agents working together:
+## Overview
 
-1. Ben Graham Agent - The godfather of value investing, only buys hidden gems with a margin of safety
-2. Bill Ackman Agent - An activist investors, takes bold positions and pushes for change
-3. Cathie Wood Agent - The queen of growth investing, believes in the power of innovation and disruption
-4. Charlie Munger Agent - Warren Buffett's partner, only buys wonderful businesses at fair prices
-5. Stanley Druckenmiller Agent - Macro trading legend who hunts for asymmetric opportunities with explosive growth potential
-6. Warren Buffett Agent - The oracle of Omaha, seeks wonderful companies at a fair price
-7. Valuation Agent - Calculates the intrinsic value of a stock and generates trading signals
-8. Sentiment Agent - Analyzes market sentiment and generates trading signals
-9. Fundamentals Agent - Analyzes fundamental data and generates trading signals
-10. Technicals Agent - Analyzes technical indicators and generates trading signals
-11. Risk Manager - Calculates risk metrics and sets position limits
-12. Portfolio Manager - Makes final trading decisions and generates orders
+The Enterprise Agentic AI Executive Platform creates an AI-powered executive team that collaborates to provide comprehensive strategic decision support. Each AI executive brings domain-specific expertise (strategy, finance, risk, legal, ethics, technology) and works within formal decision frameworks to produce well-reasoned, explainable recommendations.
 
-<img width="1020" alt="Screenshot 2025-03-08 at 4 45 22 PM" src="https://github.com/user-attachments/assets/d8ab891e-a083-4fed-b514-ccc9322a3e57" />
+### Key Capabilities
 
-**Note**: the system simulates trading decisions, it does not actually trade.
+- **Multi-Domain Expertise**: Specialized AI executives with distinct domains of expertise
+- **Framework-Driven Analysis**: Formal decision frameworks for structured reasoning
+- **Consensus Building**: Sophisticated mechanisms to find agreement and resolve conflicts
+- **Explainable Decisions**: Complete traceability from initial query to final recommendation
+- **Governance Integration**: Built-in compliance, ethics, and risk management
 
-[![Twitter Follow](https://img.shields.io/twitter/follow/virattt?style=social)](https://twitter.com/virattt)
+### Use Cases
 
-## Disclaimer
+- Strategic market entry and expansion decisions
+- Major investment and capital allocation decisions
+- Product development and innovation strategy
+- Risk assessment and mitigation planning
+- Partnership and acquisition evaluation
+- Technology adoption and digital transformation
 
-This project is for **educational and research purposes only**.
+## Architecture
 
-- Not intended for real trading or investment
-- No warranties or guarantees provided
-- Past performance does not indicate future results
-- Creator assumes no liability for financial losses
-- Consult a financial advisor for investment decisions
+The platform implements a modular, component-based architecture designed for flexibility and extensibility:
 
-By using this software, you agree to use it solely for learning purposes.
-
-## Table of Contents
-- [Setup](#setup)
-- [Usage](#usage)
-  - [Running the Hedge Fund](#running-the-hedge-fund)
-  - [Running the Backtester](#running-the-backtester)
-- [Project Structure](#project-structure)
-- [Contributing](#contributing)
-- [Feature Requests](#feature-requests)
-- [License](#license)
-
-## Setup
-
-Clone the repository:
-```bash
-git clone https://github.com/virattt/ai-hedge-fund.git
-cd ai-hedge-fund
+```
+Enterprise Agentic AI Executive Platform
+├── Executive Agents: Domain-specific AI executives
+│   ├── Strategy Executive: Strategic planning and positioning
+│   ├── Finance Executive: Financial analysis and implications
+│   ├── Risk Executive: Risk assessment and mitigation
+│   ├── Legal Executive: Legal and regulatory analysis
+│   ├── Ethics Executive: Ethical considerations and impacts
+│   └── Technology Executive: Technical implementation and viability
+├── Decision Frameworks: Formal methodologies for decision analysis
+│   ├── Bayesian Decision Theory: Probabilistic reasoning
+│   ├── Multi-Criteria Decision Analysis: Multiple weighted criteria
+│   ├── Cynefin Framework: Complexity-aware decisions
+│   └── OODA Loop: Rapid decision cycles
+├── Consensus Builder: Agreement facilitation and conflict resolution
+├── Executive Team Orchestrator: Central coordination system
+└── Governance Controls: Compliance and ethical guardrails
 ```
 
-1. Install Poetry (if not already installed):
-```bash
-curl -sSL https://install.python-poetry.org | python3 -
+## Example Usage
+
+```python
+from src.executive_agents.strategy_executive import StrategyExecutive
+from src.executive_agents.risk_executive import RiskExecutive
+from src.decision_frameworks.bayesian_framework import BayesianDecisionFramework
+from src.consensus.consensus_builder import ConsensusBuilder
+from src.executive_team_orchestrator import ExecutiveTeamOrchestrator
+
+# Set up the executive team
+strategy_exec = StrategyExecutive()
+risk_exec = RiskExecutive()
+bayesian_framework = BayesianDecisionFramework()
+consensus_builder = ConsensusBuilder()
+
+# Create orchestrator and register components
+orchestrator = ExecutiveTeamOrchestrator()
+orchestrator.register_executive("strategy", strategy_exec)
+orchestrator.register_executive("risk", risk_exec)
+orchestrator.register_framework("bayesian", bayesian_framework)
+orchestrator.set_consensus_builder(consensus_builder)
+
+# Create a decision request
+decision_request = {
+    "decision_id": "d-2023-10-15-001",
+    "query": "Should we expand our product line into the European market?",
+    "context": {
+        "background_information": {
+            "company_description": "Mid-sized technology company specializing in AI-powered analytics",
+            "current_markets": ["North America", "Asia Pacific"],
+            "annual_revenue": "$50M",
+            "growth_targets": "20% year-over-year",
+            "available_capital": "$10M for expansion initiatives",
+            # Additional context...
+        },
+        "alternatives": [
+            {"id": "full_expansion", "name": "Full Market Entry", "description": "..."},
+            {"id": "phased_expansion", "name": "Phased Approach", "description": "..."},
+            {"id": "partnership", "name": "Strategic Partnership", "description": "..."},
+            {"id": "no_expansion", "name": "Delay Expansion", "description": "..."}
+        ],
+        "constraints": [
+            "Expansion budget limited to $10M",
+            "Must comply with EU regulations (GDPR, AI Act)",
+            # Additional constraints...
+        ],
+        "organizational_priorities": {
+            "growth": "High priority",
+            "profitability": "Medium priority",
+            # Additional priorities...
+        }
+    },
+    "required_domains": ["strategic", "financial", "risk", "market"],
+    "urgency": 3,  # 1-5 scale
+    "importance": 4,  # 1-5 scale
+    "complexity_level": "complicated"  # simple, complicated, complex, chaotic
+}
+
+# Make the decision
+decision_outcome = await orchestrator.make_decision(decision_request)
+
+# Access the recommendation
+print(f"Recommendation: {decision_outcome['recommendation'].title}")
+print(f"Summary: {decision_outcome['recommendation'].summary}")
+print(f"Confidence: {decision_outcome['recommendation'].confidence}")
+print(f"Consensus Level: {decision_outcome['consensus'].consensus_level}")
 ```
 
-2. Install dependencies:
-```bash
-poetry install
-```
+## Benefits
 
-3. Set up your environment variables:
+### Strategic Decision Support
+
+- **Comprehensive Analysis**: Multi-disciplinary perspectives on complex decisions
+- **Strategic Alignment**: Recommendations aligned with organizational goals and constraints
+- **Balanced Evaluation**: Objective assessment of alternatives and trade-offs
+- **Risk Integration**: Built-in risk identification and mitigation strategies
+
+### Operational Excellence
+
+- **Decision Quality**: Structured, thorough decision analysis 
+- **Decision Speed**: Rapid, parallel evaluation of complex situations
+- **Consistency**: Standardized approach across different decision types
+- **Scalability**: Handles increasing decision volume and complexity
+
+### Governance and Compliance
+
+- **Transparent Process**: Complete audit trail of decision logic
+- **Policy Alignment**: Decisions checked against governance policies
+- **Regulatory Compliance**: Built-in regulatory checks and considerations
+- **Ethical Guardrails**: Explicit ethical consideration in all decisions
+
+## Implementation
+
+### Requirements
+
+- Python 3.10+
+- Supported LLM providers:
+  - OpenAI API (GPT-4 series recommended)
+  - Anthropic API (Claude 3 series recommended)
+  - Azure OpenAI Service
+  - Local LLM setup (with appropriate capabilities)
+
+### Installation
+
 ```bash
-# Create .env file for your API keys
+# Clone the repository
+git clone https://github.com/your-organization/enterprise-ai-executive.git
+cd enterprise-ai-executive
+
+# Set up virtual environment
+python -m venv venv
+source venv/bin/activate  # On Windows: venv\Scripts\activate
+
+# Install dependencies
+pip install -r requirements.txt
+
+# Configure environment variables
 cp .env.example .env
+# Edit .env with your LLM provider credentials
 ```
 
-4. Set your API keys:
-```bash
-# For running LLMs hosted by openai (gpt-4o, gpt-4o-mini, etc.)
-# Get your OpenAI API key from https://platform.openai.com/
-OPENAI_API_KEY=your-openai-api-key
+## Documentation
 
-# For running LLMs hosted by groq (deepseek, llama3, etc.)
-# Get your Groq API key from https://groq.com/
-GROQ_API_KEY=your-groq-api-key
+Comprehensive documentation is available in the `/docs` directory:
 
-# For getting financial data to power the hedge fund
-# Get your Financial Datasets API key from https://financialdatasets.ai/
-FINANCIAL_DATASETS_API_KEY=your-financial-datasets-api-key
-```
-
-**Important**: You must set `OPENAI_API_KEY`, `GROQ_API_KEY`, `ANTHROPIC_API_KEY`, or `DEEPSEEK_API_KEY` for the hedge fund to work.  If you want to use LLMs from all providers, you will need to set all API keys.
-
-Financial data for AAPL, GOOGL, MSFT, NVDA, and TSLA is free and does not require an API key.
-
-For any other ticker, you will need to set the `FINANCIAL_DATASETS_API_KEY` in the .env file.
-
-## Usage
-
-### Running the Hedge Fund
-```bash
-poetry run python src/main.py --ticker AAPL,MSFT,NVDA
-```
-
-**Example Output:**
-<img width="992" alt="Screenshot 2025-01-06 at 5 50 17 PM" src="https://github.com/user-attachments/assets/e8ca04bf-9989-4a7d-a8b4-34e04666663b" />
-
-You can also specify a `--show-reasoning` flag to print the reasoning of each agent to the console.
-
-```bash
-poetry run python src/main.py --ticker AAPL,MSFT,NVDA --show-reasoning
-```
-You can optionally specify the start and end dates to make decisions for a specific time period.
-
-```bash
-poetry run python src/main.py --ticker AAPL,MSFT,NVDA --start-date 2024-01-01 --end-date 2024-03-01 
-```
-
-### Running the Backtester
-
-```bash
-poetry run python src/backtester.py --ticker AAPL,MSFT,NVDA
-```
-
-**Example Output:**
-<img width="941" alt="Screenshot 2025-01-06 at 5 47 52 PM" src="https://github.com/user-attachments/assets/00e794ea-8628-44e6-9a84-8f8a31ad3b47" />
-
-You can optionally specify the start and end dates to backtest over a specific time period.
-
-```bash
-poetry run python src/backtester.py --ticker AAPL,MSFT,NVDA --start-date 2024-01-01 --end-date 2024-03-01
-```
-
-## Project Structure 
-```
-ai-hedge-fund/
-├── src/
-│   ├── agents/                   # Agent definitions and workflow
-│   │   ├── bill_ackman.py        # Bill Ackman agent
-│   │   ├── fundamentals.py       # Fundamental analysis agent
-│   │   ├── portfolio_manager.py  # Portfolio management agent
-│   │   ├── risk_manager.py       # Risk management agent
-│   │   ├── sentiment.py          # Sentiment analysis agent
-│   │   ├── technicals.py         # Technical analysis agent
-│   │   ├── valuation.py          # Valuation analysis agent
-│   │   ├── warren_buffett.py     # Warren Buffett agent
-│   ├── tools/                    # Agent tools
-│   │   ├── api.py                # API tools
-│   ├── backtester.py             # Backtesting tools
-│   ├── main.py # Main entry point
-├── pyproject.toml
-├── ...
-```
-
-## Contributing
-
-1. Fork the repository
-2. Create a feature branch
-3. Commit your changes
-4. Push to the branch
-5. Create a Pull Request
-
-**Important**: Please keep your pull requests small and focused.  This will make it easier to review and merge.
-
-## Feature Requests
-
-If you have a feature request, please open an [issue](https://github.com/virattt/ai-hedge-fund/issues) and make sure it is tagged with `enhancement`.
+- [Installation Guide](docs/installation_guide.md): Detailed setup instructions
+- [Developer Guide](docs/developer_guide.md): Architecture and extension documentation
+- [Operations Guide](docs/operations_guide.md): Production deployment and monitoring
+- [Framework Comparison](decision_frameworks_comparison.md): Decision framework details
+- [Governance Framework](ai_executive_governance_framework.md): Governance controls
+- [Architecture Overview](executive_team_architecture.md): Technical architecture
 
 ## License
 
-This project is licensed under the MIT License - see the LICENSE file for details.
+This project is licensed under the [MIT License](LICENSE).
