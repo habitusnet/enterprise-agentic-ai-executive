@@ -1,183 +1,329 @@
+"""
+Enterprise Agentic AI Executive Platform - Main Module
+------------------------------------------------------
+
+This is the main execution module for the Enterprise Agentic AI Executive Platform,
+providing a command-line interface to create and run business decisions using
+the executive team simulation.
+"""
+
 import sys
-
-from dotenv import load_dotenv
-from langchain_core.messages import HumanMessage
-from langgraph.graph import END, StateGraph
-from colorama import Fore, Back, Style, init
-import questionary
-from agents.ben_graham import ben_graham_agent
-from agents.bill_ackman import bill_ackman_agent
-from agents.fundamentals import fundamentals_agent
-from agents.portfolio_manager import portfolio_management_agent
-from agents.technicals import technical_analyst_agent
-from agents.risk_manager import risk_management_agent
-from agents.sentiment import sentiment_agent
-from agents.warren_buffett import warren_buffett_agent
-from graph.state import AgentState
-from agents.valuation import valuation_agent
-from utils.display import print_trading_output
-from utils.analysts import ANALYST_ORDER, get_analyst_nodes
-from utils.progress import progress
-from llm.models import LLM_ORDER, get_model_info
-
+import asyncio
 import argparse
-from datetime import datetime
-from dateutil.relativedelta import relativedelta
-from tabulate import tabulate
-from utils.visualize import save_graph_as_png
+import logging
 import json
+from datetime import datetime
+from pprint import pprint
+from dotenv import load_dotenv
+from colorama import Fore, Style, init
+import questionary
+
+# Import executive agents
+from src.executive_agents.base_executive import ExecutiveContext, ExpertiseLevel
+from src.executive_agents.strategy_executive import StrategyExecutive
+from src.executive_agents.risk_executive import RiskExecutive
+
+# Import decision frameworks
+from src.decision_frameworks.base_framework import DecisionContext, ComplexityLevel
+from src.decision_frameworks.bayesian_framework import BayesianDecisionFramework
+
+# Import consensus building
+from src.consensus.consensus_builder import ConsensusBuilder
+
+# Import orchestrator
+from src.executive_team_orchestrator import ExecutiveTeamOrchestrator, ExecutiveTeamConfig
+
+# Import LLM models
+from src.llm.models import LLM_ORDER, get_model_info
 
 # Load environment variables from .env file
 load_dotenv()
 
+# Initialize colorama
 init(autoreset=True)
 
+# Set up logging
+logging.basicConfig(
+    level=logging.INFO,
+    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s'
+)
+logger = logging.getLogger("main")
 
-def parse_hedge_fund_response(response):
-    """Parses a JSON string and returns a dictionary."""
-    try:
-        return json.loads(response)
-    except json.JSONDecodeError as e:
-        print(f"JSON decoding error: {e}\nResponse: {repr(response)}")
-        return None
-    except TypeError as e:
-        print(f"Invalid response type (expected string, got {type(response).__name__}): {e}")
-        return None
-    except Exception as e:
-        print(f"Unexpected error while parsing response: {e}\nResponse: {repr(response)}")
-        return None
+# Define available executives
+EXECUTIVE_OPTIONS = [
+    ("Chief Strategy Officer", "strategy"),
+    ("Chief Risk Officer", "risk"),
+    # Add more executives as they are implemented
+]
 
-
-
-##### Run the Hedge Fund #####
-def run_hedge_fund(
-    tickers: list[str],
-    start_date: str,
-    end_date: str,
-    portfolio: dict,
-    show_reasoning: bool = False,
-    selected_analysts: list[str] = [],
-    model_name: str = "gpt-4o",
-    model_provider: str = "OpenAI",
-):
-    # Start progress tracking
-    progress.start()
-
-    try:
-        # Create a new workflow if analysts are customized
-        if selected_analysts:
-            workflow = create_workflow(selected_analysts)
-            agent = workflow.compile()
-        else:
-            agent = app
-
-        final_state = agent.invoke(
-            {
-                "messages": [
-                    HumanMessage(
-                        content="Make trading decisions based on the provided data.",
-                    )
-                ],
-                "data": {
-                    "tickers": tickers,
-                    "portfolio": portfolio,
-                    "start_date": start_date,
-                    "end_date": end_date,
-                    "analyst_signals": {},
-                },
-                "metadata": {
-                    "show_reasoning": show_reasoning,
-                    "model_name": model_name,
-                    "model_provider": model_provider,
-                },
-            },
+async def run_decision_process(decision_request, model_name, model_provider, selected_executives):
+    """
+    Run the full decision-making process with the executive team.
+    
+    Args:
+        decision_request: The decision request details
+        model_name: The LLM model to use
+        model_provider: The LLM provider
+        selected_executives: List of selected executive types
+        
+    Returns:
+        The decision outcome
+    """
+    logger.info(f"Starting decision process for: {decision_request['query']}")
+    
+    # Create orchestrator with configuration
+    config = ExecutiveTeamConfig(
+        consensus_threshold=0.7,
+        min_executive_participation=0.6,
+        default_decision_framework="bayesian",
+        max_resolution_attempts=3,
+        auto_select_framework=True
+    )
+    orchestrator = ExecutiveTeamOrchestrator(config)
+    
+    # Create and register executives
+    if "strategy" in selected_executives:
+        strategy_exec = StrategyExecutive(
+            name="Strategy Executive",
+            model_provider=model_provider,
+            model_name=model_name
         )
+        orchestrator.register_executive(
+            executive=strategy_exec,
+            role_priority={"strategic": 5, "market": 4, "innovation": 4, "financial": 3},
+            veto_rights=["strategic"]
+        )
+    
+    if "risk" in selected_executives:
+        risk_exec = RiskExecutive(
+            name="Risk Management Executive",
+            model_provider=model_provider,
+            model_name=model_name
+        )
+        orchestrator.register_executive(
+            executive=risk_exec,
+            role_priority={"risk": 5, "compliance": 5, "financial": 3, "operational": 4},
+            veto_rights=["risk", "compliance"]
+        )
+    
+    # Register frameworks
+    bayesian_framework = BayesianDecisionFramework()
+    orchestrator.register_framework(bayesian_framework)
+    
+    # Create consensus builder
+    consensus_builder = ConsensusBuilder()
+    orchestrator.set_consensus_builder(consensus_builder)
+    
+    # Make the decision
+    decision_outcome = await orchestrator.make_decision(decision_request)
+    
+    return decision_outcome
 
-        return {
-            "decisions": parse_hedge_fund_response(final_state["messages"][-1].content),
-            "analyst_signals": final_state["data"]["analyst_signals"],
-        }
-    finally:
-        # Stop progress tracking
-        progress.stop()
+def print_decision_output(decision_outcome):
+    """
+    Print the decision outcome in a formatted way.
+    
+    Args:
+        decision_outcome: The decision outcome from the executive team
+    """
+    print("\n" + "="*80)
+    print(f"{Fore.CYAN}DECISION OUTCOME SUMMARY{Style.RESET_ALL}")
+    print("="*80)
+    print(f"Decision ID: {decision_outcome['decision_id']}")
+    print(f"Query: {decision_outcome['query']}")
+    
+    print(f"\n{Fore.GREEN}RECOMMENDATION:{Style.RESET_ALL}")
+    print(f"Title: {decision_outcome['recommendation'].title}")
+    print(f"Summary: {decision_outcome['recommendation'].summary}")
+    print(f"Confidence: {decision_outcome['recommendation'].confidence.name}")
+    
+    print(f"\n{Fore.YELLOW}CONSENSUS INFORMATION:{Style.RESET_ALL}")
+    print(f"Consensus Level: {decision_outcome['consensus'].consensus_level}")
+    print(f"Support Percentage: {decision_outcome['consensus'].support_percentage:.1%}")
+    
+    print("\nExecutive Agreement:")
+    for exec_name, agreement in decision_outcome['consensus'].executive_agreement.items():
+        print(f"  - {exec_name}: {agreement:.1%}")
+    
+    if decision_outcome['consensus'].key_conflicts:
+        print("\nKey Conflicts:")
+        for conflict in decision_outcome['consensus'].key_conflicts:
+            print(f"  - {conflict}")
+    
+    print(f"\n{Fore.MAGENTA}PARTICIPATING EXECUTIVES:{Style.RESET_ALL}")
+    for exec_name in decision_outcome['participating_executives']:
+        print(f"  - {exec_name}")
+    
+    print(f"\nSELECTED FRAMEWORK: {decision_outcome['selected_framework']}")
+    print(f"RESOLUTION ATTEMPTS: {decision_outcome['resolution_attempts']}")
+    
+    print(f"\n{Fore.CYAN}DETAILED RECOMMENDATION:{Style.RESET_ALL}")
+    print("-"*80)
+    print(decision_outcome['recommendation'].detailed_description)
+    
+    print(f"\n{Fore.RED}RISKS:{Style.RESET_ALL}")
+    if decision_outcome['recommendation'].risks:
+        for risk in decision_outcome['recommendation'].risks:
+            print(f"  - {risk.risk_category}: {risk.risk_description}")
+            print(f"    Impact: {risk.impact.name}, Likelihood: {risk.likelihood.name}")
+            print(f"    Mitigations: {', '.join(risk.mitigation_strategies[:2])}")
+            print()
+    else:
+        print("  No specific risks identified")
+    
+    print(f"\n{Fore.YELLOW}ALTERNATIVES CONSIDERED:{Style.RESET_ALL}")
+    if decision_outcome['recommendation'].alternatives_considered:
+        for alt in decision_outcome['recommendation'].alternatives_considered:
+            print(f"  - {alt.title}: {alt.description}")
+            print(f"    Why not selected: {alt.why_not_selected}")
+            print()
+    else:
+        print("  No alternatives specified")
+    
+    print("="*80)
 
-
-def start(state: AgentState):
-    """Initialize the workflow with the input message."""
-    return state
-
-
-def create_workflow(selected_analysts=None):
-    """Create the workflow with selected analysts."""
-    workflow = StateGraph(AgentState)
-    workflow.add_node("start_node", start)
-
-    # Get analyst nodes from the configuration
-    analyst_nodes = get_analyst_nodes()
-
-    # Default to all analysts if none selected
-    if selected_analysts is None:
-        selected_analysts = list(analyst_nodes.keys())
-    # Add selected analyst nodes
-    for analyst_key in selected_analysts:
-        node_name, node_func = analyst_nodes[analyst_key]
-        workflow.add_node(node_name, node_func)
-        workflow.add_edge("start_node", node_name)
-
-    # Always add risk and portfolio management
-    workflow.add_node("risk_management_agent", risk_management_agent)
-    workflow.add_node("portfolio_management_agent", portfolio_management_agent)
-
-    # Connect selected analysts to risk management
-    for analyst_key in selected_analysts:
-        node_name = analyst_nodes[analyst_key][0]
-        workflow.add_edge(node_name, "risk_management_agent")
-
-    workflow.add_edge("risk_management_agent", "portfolio_management_agent")
-    workflow.add_edge("portfolio_management_agent", END)
-
-    workflow.set_entry_point("start_node")
-    return workflow
-
-
-if __name__ == "__main__":
-    parser = argparse.ArgumentParser(description="Run the hedge fund trading system")
-    parser.add_argument(
-        "--initial-cash",
-        type=float,
-        default=100000.0,
-        help="Initial cash position. Defaults to 100000.0)"
+async def main():
+    """
+    Main execution function for the CLI application.
+    """
+    parser = argparse.ArgumentParser(
+        description="Enterprise Agentic AI Executive Platform - Simulate a high-performance executive team for decision support"
     )
     parser.add_argument(
-        "--margin-requirement",
-        type=float,
-        default=0.0,
-        help="Initial margin requirement. Defaults to 0.0"
-    )
-    parser.add_argument("--tickers", type=str, required=True, help="Comma-separated list of stock ticker symbols")
-    parser.add_argument(
-        "--start-date",
+        "--query",
         type=str,
-        help="Start date (YYYY-MM-DD). Defaults to 3 months before end date",
+        help="The decision query or question"
     )
-    parser.add_argument("--end-date", type=str, help="End date (YYYY-MM-DD). Defaults to today")
-    parser.add_argument("--show-reasoning", action="store_true", help="Show reasoning from each agent")
     parser.add_argument(
-        "--show-agent-graph", action="store_true", help="Show the agent graph"
+        "--complexity",
+        type=str,
+        choices=["simple", "complicated", "complex", "chaotic"],
+        default="complicated",
+        help="Complexity level of the decision"
     )
-
+    parser.add_argument(
+        "--urgency",
+        type=int,
+        choices=range(1, 6),
+        default=3,
+        help="Urgency level (1-5)"
+    )
+    parser.add_argument(
+        "--importance",
+        type=int,
+        choices=range(1, 6),
+        default=4,
+        help="Importance level (1-5)"
+    )
+    parser.add_argument(
+        "--input-file",
+        type=str,
+        help="JSON file containing the full decision request"
+    )
+    parser.add_argument(
+        "--show-reasoning",
+        action="store_true",
+        help="Show detailed reasoning from each executive"
+    )
+    
     args = parser.parse_args()
-
-    # Parse tickers from comma-separated string
-    tickers = [ticker.strip() for ticker in args.tickers.split(",")]
-
-    # Select analysts
-    selected_analysts = None
-    choices = questionary.checkbox(
-        "Select your AI analysts.",
-        choices=[questionary.Choice(display, value=value) for display, value in ANALYST_ORDER],
-        instruction="\n\nInstructions: \n1. Press Space to select/unselect analysts.\n2. Press 'a' to select/unselect all.\n3. Press Enter when done to run the hedge fund.\n",
-        validate=lambda x: len(x) > 0 or "You must select at least one analyst.",
+    
+    # Determine how to get the decision request
+    if args.input_file:
+        # Load from file
+        try:
+            with open(args.input_file, 'r') as f:
+                decision_request = json.load(f)
+            print(f"Loaded decision request from {args.input_file}")
+        except Exception as e:
+            print(f"Error loading decision request from file: {e}")
+            sys.exit(1)
+    elif args.query:
+        # Create basic request from arguments
+        decision_request = {
+            "decision_id": f"d-{datetime.now().strftime('%Y%m%d%H%M%S')}",
+            "query": args.query,
+            "complexity_level": args.complexity,
+            "urgency": args.urgency,
+            "importance": args.importance,
+            "context": {},
+            "required_domains": []
+        }
+        
+        # Interactive mode to add more context
+        add_context = questionary.confirm(
+            "Would you like to add additional context for the decision?",
+            default=True
+        ).ask()
+        
+        if add_context:
+            background = questionary.text(
+                "Enter background information about the decision:"
+            ).ask()
+            
+            alternatives = []
+            while True:
+                add_alternative = questionary.confirm(
+                    "Add an alternative option to consider?",
+                    default=len(alternatives) < 2
+                ).ask()
+                
+                if not add_alternative:
+                    break
+                
+                alt_name = questionary.text("Alternative name:").ask()
+                alt_desc = questionary.text("Alternative description:").ask()
+                
+                alternatives.append({
+                    "id": alt_name.lower().replace(" ", "_"),
+                    "name": alt_name,
+                    "description": alt_desc
+                })
+            
+            constraints = []
+            while True:
+                add_constraint = questionary.confirm(
+                    "Add a constraint on the decision?",
+                    default=len(constraints) < 1
+                ).ask()
+                
+                if not add_constraint:
+                    break
+                
+                constraint = questionary.text("Enter constraint:").ask()
+                constraints.append(constraint)
+            
+            # Update the decision request
+            decision_request["context"] = {
+                "background_information": {
+                    "description": background
+                },
+                "alternatives": alternatives,
+                "constraints": constraints
+            }
+            
+            # Ask for domains to include
+            domains = questionary.checkbox(
+                "Select relevant domains for this decision:",
+                choices=[
+                    "strategic", "financial", "risk", "market",
+                    "operational", "technical", "legal", "ethical"
+                ]
+            ).ask()
+            
+            if domains:
+                decision_request["required_domains"] = domains
+    else:
+        print("Error: Either --query or --input-file must be provided")
+        parser.print_help()
+        sys.exit(1)
+    
+    # Select executives
+    selected_executives = questionary.checkbox(
+        "Select executives to include in the decision process:",
+        choices=[questionary.Choice(display, value=value) for display, value in EXECUTIVE_OPTIONS],
+        instruction="\n\nInstructions: \n1. Press Space to select/unselect executives.\n2. Press 'a' to select/unselect all.\n3. Press Enter when done.\n",
+        validate=lambda x: len(x) > 0 or "You must select at least one executive.",
         style=questionary.Style(
             [
                 ("checkbox-selected", "fg:green"),
@@ -187,14 +333,13 @@ if __name__ == "__main__":
             ]
         ),
     ).ask()
-
-    if not choices:
+    
+    if not selected_executives:
         print("\n\nInterrupt received. Exiting...")
         sys.exit(0)
-    else:
-        selected_analysts = choices
-        print(f"\nSelected analysts: {', '.join(Fore.GREEN + choice.title().replace('_', ' ') + Style.RESET_ALL for choice in choices)}\n")
-
+    
+    print(f"\nSelected executives: {', '.join(Fore.GREEN + choice.title().replace('_', ' ') + Style.RESET_ALL for choice in selected_executives)}\n")
+    
     # Select LLM model
     model_choice = questionary.select(
         "Select your LLM model:",
@@ -206,83 +351,68 @@ if __name__ == "__main__":
             ("answer", "fg:green bold"),
         ])
     ).ask()
-
+    
     if not model_choice:
         print("\n\nInterrupt received. Exiting...")
         sys.exit(0)
+    
+    # Get model info using the helper function
+    model_info = get_model_info(model_choice)
+    if model_info:
+        model_provider = model_info.provider.value
+        print(f"\nSelected {Fore.CYAN}{model_provider}{Style.RESET_ALL} model: {Fore.GREEN + Style.BRIGHT}{model_choice}{Style.RESET_ALL}\n")
     else:
-        # Get model info using the helper function
-        model_info = get_model_info(model_choice)
-        if model_info:
-            model_provider = model_info.provider.value
-            print(f"\nSelected {Fore.CYAN}{model_provider}{Style.RESET_ALL} model: {Fore.GREEN + Style.BRIGHT}{model_choice}{Style.RESET_ALL}\n")
-        else:
-            model_provider = "Unknown"
-            print(f"\nSelected model: {Fore.GREEN + Style.BRIGHT}{model_choice}{Style.RESET_ALL}\n")
+        model_provider = "Unknown"
+        print(f"\nSelected model: {Fore.GREEN + Style.BRIGHT}{model_choice}{Style.RESET_ALL}\n")
+    
+    # Run the decision process
+    print(f"Making decision on: {decision_request['query']}")
+    try:
+        decision_outcome = await run_decision_process(
+            decision_request=decision_request,
+            model_name=model_choice,
+            model_provider=model_provider,
+            selected_executives=selected_executives
+        )
+        
+        # Print the results
+        print_decision_output(decision_outcome)
+        
+        # Optionally save the results
+        save_results = questionary.confirm(
+            "Would you like to save these decision results to a file?",
+            default=False
+        ).ask()
+        
+        if save_results:
+            filename = f"decision_{decision_request['decision_id']}.json"
+            with open(filename, 'w') as f:
+                # Convert to JSON-serializable format
+                result_dict = {
+                    "decision_id": decision_outcome["decision_id"],
+                    "query": decision_outcome["query"],
+                    "participating_executives": decision_outcome["participating_executives"],
+                    "selected_framework": decision_outcome["selected_framework"],
+                    "resolution_attempts": decision_outcome["resolution_attempts"],
+                    "recommendation": {
+                        "title": decision_outcome["recommendation"].title,
+                        "summary": decision_outcome["recommendation"].summary,
+                        "confidence": decision_outcome["recommendation"].confidence.name,
+                        "detailed_description": decision_outcome["recommendation"].detailed_description,
+                    },
+                    "consensus": {
+                        "level": decision_outcome["consensus"].consensus_level.value,
+                        "support_percentage": decision_outcome["consensus"].support_percentage,
+                    },
+                    "timestamp": datetime.now().isoformat()
+                }
+                json.dump(result_dict, f, indent=2)
+            print(f"Results saved to {filename}")
+        
+    except Exception as e:
+        logger.error(f"Error during decision process: {str(e)}")
+        print(f"Error: {str(e)}")
+        sys.exit(1)
 
-    # Create the workflow with selected analysts
-    workflow = create_workflow(selected_analysts)
-    app = workflow.compile()
-
-    if args.show_agent_graph:
-        file_path = ""
-        if selected_analysts is not None:
-            for selected_analyst in selected_analysts:
-                file_path += selected_analyst + "_"
-            file_path += "graph.png"
-        save_graph_as_png(app, file_path)
-
-    # Validate dates if provided
-    if args.start_date:
-        try:
-            datetime.strptime(args.start_date, "%Y-%m-%d")
-        except ValueError:
-            raise ValueError("Start date must be in YYYY-MM-DD format")
-
-    if args.end_date:
-        try:
-            datetime.strptime(args.end_date, "%Y-%m-%d")
-        except ValueError:
-            raise ValueError("End date must be in YYYY-MM-DD format")
-
-    # Set the start and end dates
-    end_date = args.end_date or datetime.now().strftime("%Y-%m-%d")
-    if not args.start_date:
-        # Calculate 3 months before end_date
-        end_date_obj = datetime.strptime(end_date, "%Y-%m-%d")
-        start_date = (end_date_obj - relativedelta(months=3)).strftime("%Y-%m-%d")
-    else:
-        start_date = args.start_date
-
-    # Initialize portfolio with cash amount and stock positions
-    portfolio = {
-        "cash": args.initial_cash,  # Initial cash amount
-        "margin_requirement": args.margin_requirement,  # Initial margin requirement
-        "positions": {
-            ticker: {
-                "long": 0,  # Number of shares held long
-                "short": 0,  # Number of shares held short
-                "long_cost_basis": 0.0,  # Average cost basis for long positions
-                "short_cost_basis": 0.0,  # Average price at which shares were sold short
-            } for ticker in tickers
-        },
-        "realized_gains": {
-            ticker: {
-                "long": 0.0,  # Realized gains from long positions
-                "short": 0.0,  # Realized gains from short positions
-            } for ticker in tickers
-        }
-    }
-
-    # Run the hedge fund
-    result = run_hedge_fund(
-        tickers=tickers,
-        start_date=start_date,
-        end_date=end_date,
-        portfolio=portfolio,
-        show_reasoning=args.show_reasoning,
-        selected_analysts=selected_analysts,
-        model_name=model_choice,
-        model_provider=model_provider,
-    )
-    print_trading_output(result)
+if __name__ == "__main__":
+    asyncio.run(main())
