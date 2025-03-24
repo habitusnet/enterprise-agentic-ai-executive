@@ -5,6 +5,9 @@ import { usePathname } from "next/navigation"
 import { useState } from "react"
 import { Button } from "@/components/ui/button"
 import { ThemeToggle } from "@/components/theme-toggle"
+import { UserDropdown } from "@/components/auth/user-dropdown"
+import { signOut } from "next-auth/react"
+import { useAuth } from "@/lib/auth-utils"
 import {
   ChevronLeft,
   ChevronRight,
@@ -20,7 +23,6 @@ import {
   LogOut,
   Bell,
   Menu,
-  User,
 } from "lucide-react"
 
 interface SidebarItem {
@@ -115,6 +117,7 @@ export default function DashboardLayout({
   const [sidebarOpen, setSidebarOpen] = useState(true)
   const [openSubmenu, setOpenSubmenu] = useState<string | null>(null)
   const pathname = usePathname()
+  const { isAuthenticated } = useAuth()
 
   const toggleSidebar = () => {
     setSidebarOpen(!sidebarOpen)
@@ -129,6 +132,10 @@ export default function DashboardLayout({
     } else {
       setOpenSubmenu(title)
     }
+  }
+
+  const handleLogout = () => {
+    signOut({ callbackUrl: "/auth/signin" })
   }
 
   return (
@@ -208,6 +215,7 @@ export default function DashboardLayout({
             className={`w-full justify-start ${
               !sidebarOpen ? "justify-center" : ""
             }`}
+            onClick={handleLogout}
           >
             <LogOut className="h-5 w-5" />
             {sidebarOpen && <span className="ml-2">Logout</span>}
@@ -236,9 +244,7 @@ export default function DashboardLayout({
               <Bell className="h-5 w-5" />
             </Button>
             <ThemeToggle />
-            <Button variant="ghost" size="icon">
-              <User className="h-5 w-5" />
-            </Button>
+            <UserDropdown />
           </div>
         </header>
 

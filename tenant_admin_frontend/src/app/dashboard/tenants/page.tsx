@@ -195,14 +195,35 @@ export default function TenantsPage() {
                         <div className="text-xs text-muted-foreground">{tenant.slug}</div>
                       </TableCell>
                       <TableCell>
-                        <span className={`px-2 py-1 rounded-full text-xs font-medium ${getStatusBadgeClass(tenant.status)}`}>
+                        <span className={`px-2 py-1 rounded-full text-xs font-medium inline-flex items-center gap-1 ${getStatusBadgeClass(tenant.status)}`}>
+                          {tenant.status === "active" ? (
+                            <span className="h-1.5 w-1.5 rounded-full bg-green-500"></span>
+                          ) : tenant.status === "pending" ? (
+                            <span className="h-1.5 w-1.5 rounded-full bg-yellow-500"></span>
+                          ) : (
+                            <span className="h-1.5 w-1.5 rounded-full bg-red-500"></span>
+                          )}
                           {tenant.status.charAt(0).toUpperCase() + tenant.status.slice(1)}
                         </span>
                       </TableCell>
                       <TableCell>{tenant.plan}</TableCell>
                       <TableCell>{tenant.usersCount}</TableCell>
                       <TableCell>{tenant.agentsCount}</TableCell>
-                      <TableCell>{tenant.apiUsage}</TableCell>
+                      <TableCell>
+                        <div className="flex items-center gap-2">
+                          <div className="w-16 bg-gray-100 rounded-full h-2.5">
+                            <div
+                              className={`h-2.5 rounded-full ${
+                                parseInt(tenant.apiUsage) > 80 ? 'bg-red-500' :
+                                parseInt(tenant.apiUsage) > 60 ? 'bg-yellow-500' :
+                                'bg-green-500'
+                              }`}
+                              style={{ width: tenant.apiUsage }}
+                            ></div>
+                          </div>
+                          <span>{tenant.apiUsage}</span>
+                        </div>
+                      </TableCell>
                       <TableCell>{tenant.createdAt}</TableCell>
                       <TableCell>
                         <DropdownMenu>
