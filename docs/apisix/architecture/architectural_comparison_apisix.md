@@ -12,7 +12,7 @@ This document compares three potential architectural approaches for the Enterpri
 
 | Feature                                     | Idea 1: Phase 1 (Original)                                                                                                          | Idea 2: APISIX as an Addon                                                                                                                                        | Idea 3: APISIX as a Key Element                                                                                                                                                                                                                                           |
 | :------------------------------------------ | :---------------------------------------------------------------------------------------------------------------------------------- | :---------------------------------------------------------------------------------------------------------------------------------------------------------------- | :------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| **External Service Access**                 | Direct API calls from backend services (e.g., LLM service, financial data code).                                                    | Backend services route external calls through APISIX. APISIX acts as a proxy/gateway.                                                                             | APISIX is the *sole* entry point for all external service access. Backend services interact with external APIs *only* via APISIX. Potentially handles internal service calls.                                                                                             |
+| **External Service Access**                 | Direct API calls from backend services (e.g., LLM service, financial data code).                                                    | Backend services route external calls through APISIX. APISIX acts as a proxy/gateway.                                                                             | APISIX is the _sole_ entry point for all external service access. Backend services interact with external APIs _only_ via APISIX. Potentially handles internal service calls.                                                                                             |
 | **LLM Integration Approach**                | Internal LLM service layer handles direct API calls to providers. Basic error/retry logic within backend.                           | LLM service layer is refactored to route calls through APISIX. APISIX handles basic gateway functions (routing, rate limiting).                                   | LLM service layer is designed around APISIX. APISIX handles advanced LLM-specific routing, load balancing across models/providers, and potentially plugin-based request/response transformation.                                                                          |
 | **MCP Integration Role**                    | Not explicitly planned or integrated.                                                                                               | MCP server is implemented and proxied by APISIX. APISIX routes requests to the MCP server.                                                                        | MCP server is a core service managed by APISIX. APISIX provides advanced features for MCP, such as tenant-aware routing to specific MCP instances, detailed usage metrics, and policy enforcement.                                                                        |
 | **Security Implementation**                 | Basic API key management in backend code/environment variables. Governance focuses on internal decision process security.           | Enhanced security via APISIX plugins (Key Auth, Rate Limiting, etc.) applied at the gateway for external traffic. Centralized authentication for external access. | Deep integration of APISIX security plugins. Authentication/authorization policies are defined and enforced primarily at the gateway level for both external and potentially internal traffic. Fine-grained access control per tenant/service.                            |
@@ -25,20 +25,22 @@ This document compares three potential architectural approaches for the Enterpri
 
 ## Evaluation Against Goals
 
-*   **Powerful:**
-    *   **Idea 1:** Powerful in terms of core agentic logic, but limited in managing diverse external resources and scaling API access.
-    *   **Idea 2:** More powerful than Idea 1 due to centralized external API management and basic resilience features provided by APISIX. Improves LLM integration by routing through a gateway.
-    *   **Idea 3:** Most powerful in terms of managing complex API interactions, integrating diverse AI models via MCP, and providing a scalable, resilient infrastructure for all service communication. Enables advanced features like dynamic routing and policy enforcement at the edge.
+- **Powerful:**
 
-*   **Safe:**
-    *   **Idea 1:** Security relies heavily on backend implementation, potentially leading to inconsistencies and vulnerabilities. Limited centralized control over external access.
-    *   **Idea 2:** Significantly safer than Idea 1 by centralizing security concerns (auth, rate limiting) for external traffic at the gateway. Reduces the attack surface on backend services.
-    *   **Idea 3:** Safest approach. Security is a core function of the gateway, enforced consistently for all API traffic (external and potentially internal). Provides fine-grained access control and robust protection against common threats. Multi-tenancy security is deeply integrated.
+  - **Idea 1:** Powerful in terms of core agentic logic, but limited in managing diverse external resources and scaling API access.
+  - **Idea 2:** More powerful than Idea 1 due to centralized external API management and basic resilience features provided by APISIX. Improves LLM integration by routing through a gateway.
+  - **Idea 3:** Most powerful in terms of managing complex API interactions, integrating diverse AI models via MCP, and providing a scalable, resilient infrastructure for all service communication. Enables advanced features like dynamic routing and policy enforcement at the edge.
 
-*   **SaaS-Ready:**
-    *   **Idea 1:** Requires significant custom development in the backend to handle multi-tenancy concerns related to external API access (tenant-specific keys, rate limits, usage tracking).
-    *   **Idea 2:** Improves SaaS readiness by providing centralized external API management and basic tenant-aware features via APISIX consumers. Still requires backend logic for full multi-tenancy support.
-    *   **Idea 3:** Highly SaaS-ready. APISIX's multi-tenancy features are leveraged as a core part of the architecture, simplifying tenant management, policy enforcement, and resource isolation at the gateway level. Provides the necessary infrastructure for scaling to many tenants.
+- **Safe:**
+
+  - **Idea 1:** Security relies heavily on backend implementation, potentially leading to inconsistencies and vulnerabilities. Limited centralized control over external access.
+  - **Idea 2:** Significantly safer than Idea 1 by centralizing security concerns (auth, rate limiting) for external traffic at the gateway. Reduces the attack surface on backend services.
+  - **Idea 3:** Safest approach. Security is a core function of the gateway, enforced consistently for all API traffic (external and potentially internal). Provides fine-grained access control and robust protection against common threats. Multi-tenancy security is deeply integrated.
+
+- **SaaS-Ready:**
+  - **Idea 1:** Requires significant custom development in the backend to handle multi-tenancy concerns related to external API access (tenant-specific keys, rate limits, usage tracking).
+  - **Idea 2:** Improves SaaS readiness by providing centralized external API management and basic tenant-aware features via APISIX consumers. Still requires backend logic for full multi-tenancy support.
+  - **Idea 3:** Highly SaaS-ready. APISIX's multi-tenancy features are leveraged as a core part of the architecture, simplifying tenant management, policy enforcement, and resource isolation at the gateway level. Provides the necessary infrastructure for scaling to many tenants.
 
 ## Recommendation
 
