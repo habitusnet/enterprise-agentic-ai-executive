@@ -1,0 +1,40 @@
+# APISIX Dashboard configuration
+
+conf:
+  # APISIX Dashboard web server listening address
+  listen:
+    host: 0.0.0.0   # Allow access from any IP
+    port: 9000
+
+  # APISIX Admin API
+  apisix:
+    base_url: http://apisix:9080/apisix/admin
+    admin_key: edd1c9f034335f136f87ad84b625c8f1  # Same as admin_key in APISIX config
+
+  # Dashboard authentication
+  auth:
+    enable: true
+    # Default user
+    # The password is "admin" after SHA512 encryption
+    admin:
+      username: admin
+      password: $2a$10$uT5TaQtFkzYdPBZUgIxNkOJtzifQE71D4lAvPwXcw6j76.xvjTvNq
+
+  # etcd configuration
+  etcd:
+    endpoints:
+      - http://etcd:2379
+    prefix: /apisix
+    timeout: 30
+
+  # storage for plugin metadata and configurations
+  conf_storage:
+    type: etcd
+
+  # log configuration
+  log:
+    error_log:
+      level: warn
+      file_path: logs/error.log
+    access_log:
+      file_path: logs/access.log

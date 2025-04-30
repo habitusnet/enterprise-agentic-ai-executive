@@ -1,0 +1,100 @@
+# Example routes for LLM providers and MCP server integration
+#
+# These examples demonstrate how to configure APISIX routes for:
+# 1. Direct access to LLM providers
+# 2. MCP server integration
+# 3. Applying plugins for security and observability
+
+routes:
+  # Example route for OpenAI API - direct passthrough with authentication and rate limiting
+  - id: openai-api
+    uri: /openai/*
+    host: example-ai-platform.com
+    plugins:
+      key-auth:
+        header: X-API-Key
+        query: api_key
+      limit-req:
+        rate: 10
+        burst: 5
+        rejected_code: 429
+        key: remote_addr
+      prometheus:
+        prefer_name: true
+    upstream:
+      name: openai-upstream
+      type: roundrobin
+      nodes:
+        "api.openai.com:443": 1
+      scheme: https
+      pass_host: pass
+      tls:
+        verify: true
+
+  # Example route for Anthropic API - similar to OpenAI but with different parameters
+  - id: anthropic-api
+    uri: /anthropic/*
+    host: example-ai-platform.com
+    plugins:
+      key-auth:
+        header: X-API-Key
+        query: api_key
+      limit-req:
+        rate: 5
+        burst: 2
+        rejected_code: 429
+        key: remote_addr
+      prometheus:
+        prefer_name: true
+    upstream:
+      name: anthropic-upstream
+      type: roundrobin
+      nodes:
+        "api.anthropic.com:443": 1
+      scheme: https
+      pass_host: pass
+      tls:
+        verify: true
+
+  # Example route for generic MCP server - demonstrates potential integration
+  - id: mcp-server
+    uri: /mcp/*
+    host: example-ai-platform.com
+    plugins:
+      jwt-auth:
+        header: Authorization
+        query: token
+        cookie: jwt
+        secret: "your-jwt-secret"
+      proxy-rewrite:
+        regex_uri: ["^/mcp/(.*)", "/$1"]
+      prometheus:
+        prefer_name: true
+    upstream:
+      name: mcp-server-upstream
+      type: roundrobin
+      nodes:
+        "mcp-server:8080": 1
+
+# How to apply this configuration using the APISIX Admin API:
+#
+# curl http://127.0.0.1:9080/apisix/admin/routes -H 'X-API-KEY: edd1c9f034335f136f87ad84b625c8f1' -X PUT -d '
+# {
+#   "id": "openai-api",
+#   "uri": "/openai/*",
+#   "host": "example-ai-platform.com",
+#   "plugins": {
+#     "key-auth": {
+#       "header": "X-API-Key",
+#       "query": "api_key"
+#     }
+#   },
+#   "upstream": {
+#     "type": "roundrobin",
+#     "nodes": {
+#       "api.openai.com:443": 1
+#     },
+#     "scheme": "https",
+#     "pass_host": "pass"
+#   }
+# }'

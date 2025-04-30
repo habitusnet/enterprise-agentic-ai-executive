@@ -1,0 +1,55 @@
+version: "3"
+
+services:
+  # APISIX depends on etcd
+  etcd:
+    image: bitnami/etcd:latest
+    container_name: etcd
+    environment:
+      - ALLOW_NONE_AUTHENTICATION=yes
+      - ETCD_ADVERTISE_CLIENT_URLS=http://etcd:2379
+    restart: always
+    volumes:
+      - etcd_data:/bitnami/etcd
+    networks:
+      - apisix-network
+
+  # APISIX
+  apisix:
+    image: apache/apisix:latest
+    container_name: apisix
+    restart: always
+    volumes:
+      - ./apisix_conf/config.yaml:/usr/local/apisix/conf/config.yaml:ro
+    depends_on:
+      - etcd
+    ports:
+      - "9080:9080" # HTTP port
+      - "9443:9443" # HTTPS port
+      - "9091:9091" # Prometheus metrics port
+    networks:
+      - apisix-network
+    environment:
+      - TZ=UTC
+
+  # APISIX Dashboard for management
+  dashboard:
+    image: apache/apisix-dashboard:latest
+    container_name: apisix-dashboard
+    restart: always
+    volumes:
+      - ./dashboard_conf/conf.yaml:/usr/local/apisix-dashboard/conf/conf.yaml:ro
+    depends_on:
+      - etcd
+    ports:
+      - "9000:9000" # Dashboard UI port
+    networks:
+      - apisix-network
+
+volumes:
+  etcd_data:
+    driver: local
+
+networks:
+  apisix-network:
+    driver: bridge
